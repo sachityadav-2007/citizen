@@ -57,35 +57,17 @@ const Chatbot = ({ weatherData, currencyData, citizenData, factData }) => {
 
     try {
       const systemContext = buildContextString();
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-      
-      if (!apiKey || apiKey === 'your_key_here') {
-        throw new Error('API Key missing. Please check .env file.');
-      }
+      // Using completely free Pollinations endpoint for GET requests
+      const combinedPrompt = systemContext + "\n\nUser Question: " + userMessage;
+      const encodedPrompt = encodeURIComponent(combinedPrompt);
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'mistralai/mistral-small-3.1-24b-instruct:free',
-          messages: [
-            { role: 'system', content: systemContext },
-            { role: 'user', content: userMessage }
-          ]
-        })
-      });
+      const response = await fetch(`https://text.pollinations.ai/prompt/${encodedPrompt}`);
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
 
-      const data = await response.json();
-      const botMessage = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content 
-        ? data.choices[0].message.content 
-        : 'Sorry, I could not understand the response.';
+      const botMessage = await response.text();
 
       setMessages((prev) => [...prev, { role: 'assistant', content: botMessage }]);
     } catch (error) {
